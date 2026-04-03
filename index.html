@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#06060e">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<title>FILIP — Daily OS</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+  --bg: #06060e; --s1: #0e0e1c; --s2: #141426; --s3: #1c1c32;
+  --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.13);
+  --lime: #b8f53a; --lime-d: rgba(184,245,58,0.13);
+  --teal: #3af0c0; --teal-d: rgba(58,240,192,0.1);
+  --gold: #f0b830; --gold-d: rgba(240,184,48,0.12);
+  --red: #f04060; --red-d: rgba(240,64,96,0.1);
+  --purple: #a070f0;
+  --text: #f2f2fa; --t2: rgba(242,242,250,0.5); --t3: rgba(242,242,250,0.25);
+  --r: 18px; --rsm: 12px; --rxs: 8px;
+}
+html { background: var(--bg); }
+body { font-family: 'Outfit', sans-serif; color: var(--text); min-height: 100vh; overflow-y: scroll; overflow-x: hidden; -webkit-overflow-scrolling: touch; }
+
+/* MODE BADGE */
+.mode-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+  padding: 5px 12px; border-radius: 20px; font-weight: 500;
+  margin-top: 8px;
+}
+.mode-weekday { background: var(--lime-d); color: var(--lime); }
+.mode-saturday { background: rgba(240,184,48,0.15); color: var(--gold); }
+.mode-sunday { background: var(--teal-d); color: var(--teal); }
+
+/* HERO */
+.hero-banner { position: relative; height: 220px; overflow: hidden; flex-shrink: 0; }
+.hero-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.hero-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(6,6,14,0.3) 0%, rgba(6,6,14,0.0) 35%, rgba(6,6,14,0.85) 82%, rgba(6,6,14,1) 100%); }
+.hero-content { position: absolute; bottom: 20px; left: 20px; right: 20px; }
+.hero-eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--lime); opacity: 0.85; margin-bottom: 4px; }
+.hero-title { font-size: 46px; font-weight: 900; line-height: 0.9; letter-spacing: -0.03em; }
+.hero-title span { color: var(--lime); }
+.hero-date { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--t2); margin-top: 6px; letter-spacing: 0.08em; }
+
+.app { max-width: 430px; margin: 0 auto; padding-bottom: 90px; min-height: 100vh; }
+.page { display: none; }
+.page.active { display: block; animation: fadeIn 0.2s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+/* NAV */
+.nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(6,6,14,0.93); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-top: 1px solid var(--border); display: flex; z-index: 500; padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+.nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 10px 0 6px; background: none; border: none; cursor: pointer; }
+.nav-icon { font-size: 20px; line-height: 1; filter: grayscale(1) brightness(0.4); transition: filter 0.2s, transform 0.2s; }
+.nav-btn.active .nav-icon { filter: grayscale(0) brightness(1); transform: translateY(-1px); }
+.nav-label { font-family: 'JetBrains Mono', monospace; font-size: 8px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--t3); transition: color 0.2s; }
+.nav-btn.active .nav-label { color: var(--lime); }
+
+/* SECTIONS */
+.section { padding: 0 16px; margin-bottom: 14px; }
+.sec-label { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.sec-tag { font-family: 'JetBrains Mono', monospace; font-size: 8.5px; letter-spacing: 0.18em; text-transform: uppercase; padding: 4px 10px; border-radius: 20px; font-weight: 500; }
+.tg-lime { background: var(--lime-d); color: var(--lime); }
+.tg-teal { background: var(--teal-d); color: var(--teal); }
+.tg-gold { background: var(--gold-d); color: var(--gold); }
+.tg-red  { background: var(--red-d);  color: var(--red); }
+.sec-time { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--t3); margin-left: auto; }
+
+.card { background: var(--s1); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; }
+
+/* HABIT ROW */
+.hrow { display: flex; align-items: center; gap: 12px; padding: 13px 14px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.12s; user-select: none; }
+.hrow:last-child { border-bottom: none; }
+.hrow:active { background: var(--s2); }
+.hrow.done { background: rgba(184,245,58,0.04); }
+.hicon { width: 38px; height: 38px; border-radius: 11px; background: var(--s2); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; transition: background 0.15s; }
+.hrow.done .hicon { background: var(--lime-d); }
+.hbody { flex: 1; min-width: 0; }
+.hname { font-size: 14px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color 0.15s; }
+.hrow.done .hname { color: var(--t3); text-decoration: line-through; text-decoration-color: rgba(184,245,58,0.3); }
+.hsub { font-size: 11px; color: var(--t3); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.htime { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--t3); flex-shrink: 0; }
+.hck { width: 22px; height: 22px; border-radius: 6px; border: 1.5px solid var(--border2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.16s cubic-bezier(0.4,0,0.2,1); }
+.hrow.done .hck { background: var(--lime); border-color: var(--lime); }
+.hck svg { opacity: 0; transform: scale(0.3); transition: all 0.16s cubic-bezier(0.4,0,0.2,1); }
+.hrow.done .hck svg { opacity: 1; transform: scale(1); }
+
+/* CHIPS */
+.chip-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px; }
+.chip { background: var(--s2); border: 1px solid var(--border); border-radius: var(--rsm); padding: 12px; display: flex; align-items: center; gap: 9px; cursor: pointer; transition: all 0.12s; user-select: none; }
+.chip:active { transform: scale(0.97); }
+.chip.done { background: var(--lime-d); border-color: rgba(184,245,58,0.22); }
+.chip.done .chip-name { color: var(--lime); }
+.chip-icon { font-size: 18px; flex-shrink: 0; }
+.chip-name { font-size: 12px; font-weight: 500; color: var(--t2); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chip-box { width: 16px; height: 16px; border-radius: 4px; border: 1px solid var(--border2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.12s; }
+.chip.done .chip-box { background: var(--lime); border-color: var(--lime); }
+.chip-box svg { opacity: 0; transform: scale(0.3); transition: all 0.12s; }
+.chip.done .chip-box svg { opacity: 1; transform: scale(1); }
+
+/* STREAK */
+.streak-card { margin: 16px 16px 14px; background: var(--s1); border: 1px solid var(--border); border-radius: var(--r); padding: 16px; display: flex; align-items: center; gap: 14px; }
+.streak-flame { font-size: 28px; }
+.streak-body { flex: 1; }
+.streak-num { font-size: 34px; font-weight: 900; color: var(--gold); line-height: 1; font-variant-numeric: tabular-nums; }
+.streak-label { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--t3); letter-spacing: 0.1em; text-transform: uppercase; margin-top: 2px; }
+.streak-dots { display: flex; gap: 5px; align-items: center; }
+.sdot { width: 8px; height: 8px; border-radius: 50%; background: var(--s3); }
+.sdot.on { background: var(--gold); }
+.sdot.today { background: var(--lime); box-shadow: 0 0 6px var(--lime); }
+
+/* PROGRESS */
+.prog-strip { display: flex; gap: 10px; padding: 0 16px; margin-bottom: 14px; }
+.prog-box { flex: 1; background: var(--s1); border: 1px solid var(--border); border-radius: var(--rsm); padding: 14px 10px; text-align: center; position: relative; overflow: hidden; }
+.prog-box::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--lime), var(--teal)); transform: scaleX(var(--p, 0)); transform-origin: left; transition: transform 0.7s cubic-bezier(0.4,0,0.2,1); }
+.prog-val { font-size: 30px; font-weight: 900; color: var(--lime); line-height: 1; font-variant-numeric: tabular-nums; }
+.prog-lbl { font-family: 'JetBrains Mono', monospace; font-size: 8.5px; color: var(--t3); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 4px; }
+
+/* WATER */
+.water-inner { padding: 14px; }
+.water-top { display: flex; align-items: baseline; margin-bottom: 3px; }
+.water-title { font-size: 13px; font-weight: 500; }
+.water-val { font-size: 28px; font-weight: 800; color: var(--teal); margin-left: auto; font-variant-numeric: tabular-nums; }
+.water-goal { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; color: var(--t3); }
+.water-bar-bg { height: 4px; background: var(--s3); border-radius: 2px; margin: 10px 0; }
+.water-bar-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--teal), var(--lime)); transition: width 0.4s ease; }
+.water-drops { display: flex; gap: 5px; margin-top: 10px; }
+.wdrop { flex: 1; height: 36px; border-radius: 8px; background: var(--s2); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 14px; cursor: pointer; transition: all 0.12s; }
+.wdrop:active { transform: scale(0.92); }
+.wdrop.on { background: rgba(58,240,192,0.14); border-color: rgba(58,240,192,0.3); }
+
+/* JOURNAL */
+.journal-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+.jprompt { display: flex; flex-direction: column; gap: 4px; }
+.jlabel { font-family: 'JetBrains Mono', monospace; font-size: 8.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--lime); opacity: 0.7; }
+.jinput { background: var(--s2); border: 1px solid var(--border); border-radius: var(--rxs); color: var(--text); font-family: 'Outfit', sans-serif; font-size: 13px; padding: 10px 12px; resize: none; width: 100%; min-height: 60px; outline: none; line-height: 1.5; transition: border-color 0.18s; }
+.jinput::placeholder { color: var(--t3); }
+.jinput:focus { border-color: rgba(184,245,58,0.3); }
+.save-btn { display: block; width: calc(100% - 28px); margin: 10px 14px 14px; background: var(--lime); color: #06060e; border: none; border-radius: var(--rxs); padding: 14px; font-family: 'Outfit', sans-serif; font-size: 15px; font-weight: 700; letter-spacing: 0.04em; cursor: pointer; transition: opacity 0.12s, transform 0.1s; }
+.save-btn:active { transform: scale(0.98); opacity: 0.88; }
+
+/* TOAST */
+.toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%) translateY(-70px); background: var(--lime); color: #06060e; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; padding: 9px 18px; border-radius: 30px; font-weight: 500; transition: transform 0.26s cubic-bezier(0.4,0,0.2,1); z-index: 999; white-space: nowrap; }
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* HISTORY / STATS page hero */
+.page-hero { position: relative; height: 160px; overflow: hidden; }
+.page-hero img { width: 100%; height: 100%; object-fit: cover; }
+.page-hero-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(6,6,14,0.4), rgba(6,6,14,1)); }
+.page-hero-text { position: absolute; bottom: 18px; left: 20px; }
+.page-eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--lime); opacity: 0.8; margin-bottom: 4px; }
+.page-title { font-size: 36px; font-weight: 900; letter-spacing: -0.02em; line-height: 0.95; }
+.page-title span { color: var(--lime); }
+
+/* WEEK BOXES */
+.week-boxes { display: flex; gap: 8px; padding: 16px 16px 0; }
+.wbox { flex: 1; background: var(--s1); border: 1px solid var(--border); border-radius: var(--rsm); padding: 12px 10px; text-align: center; }
+.wbox-val { font-size: 24px; font-weight: 900; color: var(--lime); font-variant-numeric: tabular-nums; }
+.wbox-lbl { font-family: 'JetBrains Mono', monospace; font-size: 8.5px; color: var(--t3); text-transform: uppercase; letter-spacing: 0.1em; margin-top: 2px; }
+
+/* CALENDAR */
+.cal-nav { display: flex; align-items: center; gap: 10px; padding: 14px 16px 10px; }
+.cal-nav-btn { background: var(--s1); border: 1px solid var(--border); border-radius: 8px; padding: 7px 14px; font-size: 14px; color: var(--t2); cursor: pointer; transition: background 0.12s; }
+.cal-nav-btn:active { background: var(--s2); }
+.cal-month { flex: 1; text-align: center; font-size: 16px; font-weight: 700; }
+.cal-wrap { padding: 0 16px; margin-bottom: 16px; }
+.cal-dow { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; margin-bottom: 4px; }
+.cal-dow-cell { text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 8px; color: var(--t3); text-transform: uppercase; padding: 2px 0; }
+.cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; }
+.ccell { aspect-ratio: 1; border-radius: 8px; background: var(--s1); border: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--t3); gap: 2px; cursor: pointer; transition: all 0.12s; }
+.ccell.empty { background: transparent; border-color: transparent; cursor: default; }
+.ccell.full { background: rgba(184,245,58,0.14); border-color: rgba(184,245,58,0.28); color: var(--lime); }
+.ccell.part { background: rgba(184,245,58,0.05); border-color: rgba(184,245,58,0.12); color: rgba(184,245,58,0.4); }
+.ccell.today { border-color: var(--lime); color: var(--lime); box-shadow: 0 0 10px rgba(184,245,58,0.18); }
+.ccell.future { opacity: 0.2; cursor: default; }
+.ccell-dot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: 0.6; }
+
+/* JOURNAL ENTRIES */
+.j-entry { background: var(--s1); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; margin-bottom: 8px; }
+.j-entry-head { padding: 13px 14px; display: flex; align-items: center; gap: 10px; cursor: pointer; border-bottom: 1px solid transparent; transition: border-color 0.15s; }
+.j-entry-head.open { border-bottom-color: var(--border); }
+.j-entry-date { font-size: 14px; font-weight: 600; }
+.j-entry-badge { font-family: 'JetBrains Mono', monospace; font-size: 8px; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 8px; border-radius: 10px; margin-left: auto; }
+.badge-full { background: var(--lime-d); color: var(--lime); }
+.badge-part { background: var(--gold-d); color: var(--gold); }
+.badge-miss { background: var(--red-d); color: var(--red); }
+.j-entry-chevron { font-size: 10px; color: var(--t3); transition: transform 0.2s; }
+.j-entry-head.open .j-entry-chevron { transform: rotate(180deg); }
+.j-entry-body { display: none; padding: 12px 14px; }
+.j-entry-body.open { display: block; }
+.j-field-label { font-family: 'JetBrains Mono', monospace; font-size: 8px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--lime); opacity: 0.7; margin-bottom: 3px; margin-top: 10px; }
+.j-field-label:first-child { margin-top: 0; }
+.j-field-text { font-size: 12.5px; color: var(--t2); line-height: 1.6; }
+
+/* STATS */
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 16px 14px; }
+.stat-card { background: var(--s1); border: 1px solid var(--border); border-radius: var(--r); padding: 16px 14px; }
+.stat-val { font-size: 40px; font-weight: 900; color: var(--lime); line-height: 1; font-variant-numeric: tabular-nums; }
+.stat-lbl { font-family: 'JetBrains Mono', monospace; font-size: 8.5px; color: var(--t3); text-transform: uppercase; letter-spacing: 0.12em; margin-top: 4px; }
+.heatmap { padding: 0 16px; margin-bottom: 14px; }
+.hm-bars { display: flex; gap: 5px; align-items: flex-end; height: 72px; margin-bottom: 5px; }
+.hm-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; }
+.hm-bar { width: 100%; border-radius: 3px 3px 0 0; background: linear-gradient(180deg, var(--lime), rgba(184,245,58,0.25)); min-height: 2px; }
+.hm-day { font-family: 'JetBrains Mono', monospace; font-size: 8px; color: var(--t3); text-align: center; margin-top: 4px; }
+.habit-bars { padding: 0 16px; margin-bottom: 14px; }
+.hbar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.hbar-name { font-size: 11.5px; color: var(--t2); width: 130px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hbar-track { flex: 1; height: 5px; background: var(--s3); border-radius: 3px; overflow: hidden; }
+.hbar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--lime), var(--teal)); }
+.hbar-pct { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--t3); width: 28px; text-align: right; flex-shrink: 0; }
+.invest-card { margin: 0 16px 14px; background: var(--s1); border: 1px solid var(--border); border-left: 2px solid var(--teal); border-radius: var(--rsm); padding: 14px; }
+.invest-label { font-family: 'JetBrains Mono', monospace; font-size: 8.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--teal); margin-bottom: 5px; }
+.invest-text { font-size: 12.5px; color: var(--t2); line-height: 1.6; }
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+<div class="app">
+
+<!-- ═══ TODAY ═══ -->
+<div class="page active" id="page-today">
+  <div class="hero-banner">
+    <img class="hero-img" id="hero-img"
+      src="https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=860&q=80&auto=format&fit=crop"
+      alt="morning" loading="eager" onerror="this.style.display='none'">
+    <div class="hero-overlay"></div>
+    <div class="hero-content">
+      <div class="hero-eyebrow">Daily Operating System</div>
+      <div class="hero-title">FILIP<span>.</span></div>
+      <div class="hero-date" id="today-date"></div>
+      <div class="mode-badge" id="mode-badge"></div>
+    </div>
+  </div>
+
+  <div class="streak-card">
+    <div class="streak-flame">🔥</div>
+    <div class="streak-body">
+      <div class="streak-num" id="streak-num">0</div>
+      <div class="streak-label">Day streak · 75% to count</div>
+    </div>
+    <div class="streak-dots" id="streak-dots"></div>
+  </div>
+
+  <div class="prog-strip">
+    <div class="prog-box" id="prog-box" style="--p:0"><div class="prog-val" id="prog-done">0</div><div class="prog-lbl">Done</div></div>
+    <div class="prog-box" style="--p:0"><div class="prog-val" style="color:var(--t2)" id="prog-left">0</div><div class="prog-lbl">Remaining</div></div>
+    <div class="prog-box" style="--p:0"><div class="prog-val" style="color:var(--teal)" id="prog-pct">0%</div><div class="prog-lbl">Complete</div></div>
+  </div>
+
+  <div class="section"><div class="sec-label"><span class="sec-tag tg-lime" id="morning-tag">🌅 Morning</span><span class="sec-time" id="morning-time">04:45 – 06:30</span></div><div class="card" id="list-morning"></div></div>
+  <div class="section"><div class="sec-label"><span class="sec-tag tg-gold">☀️ Daytime</span><span class="sec-time" id="day-time">08:00 – 19:00</span></div><div class="card" id="list-day"></div></div>
+  <div class="section"><div class="sec-label"><span class="sec-tag tg-teal">🌙 Evening</span><span class="sec-time" id="evening-time">21:00 – 21:45</span></div><div class="card" id="list-evening"></div></div>
+  <div class="section"><div class="sec-label"><span class="sec-tag tg-red">⚡ Daily habits</span></div><div class="card"><div class="chip-grid" id="list-daily"></div></div></div>
+
+  <div class="section">
+    <div class="sec-label"><span class="sec-tag tg-teal">💧 Hydration</span></div>
+    <div class="card"><div class="water-inner">
+      <div class="water-top"><span class="water-title">Water intake</span><span class="water-val" id="water-val">0.0L</span></div>
+      <div class="water-goal">Goal: 2.5L / day</div>
+      <div class="water-bar-bg"><div class="water-bar-fill" id="water-fill" style="width:0%"></div></div>
+      <div class="water-drops" id="water-drops"></div>
+    </div></div>
+  </div>
+
+  <div class="section" style="margin-bottom:20px">
+    <div class="sec-label"><span class="sec-tag tg-lime">✍️ Daily Journal</span></div>
+    <div class="card">
+      <div class="journal-body">
+        <div class="jprompt"><div class="jlabel">What happened today</div><textarea class="jinput" id="j-happened" placeholder="Key moments, wins, challenges..." rows="2"></textarea></div>
+        <div class="jprompt"><div class="jlabel">What could have been better</div><textarea class="jinput" id="j-better" placeholder="Be honest with yourself..." rows="2"></textarea></div>
+        <div class="jprompt"><div class="jlabel">Short-term goals</div><textarea class="jinput" id="j-short" placeholder="This week / month..." rows="2"></textarea></div>
+        <div class="jprompt"><div class="jlabel">Long-term goals</div><textarea class="jinput" id="j-long" placeholder="1 year / 5 years..." rows="2"></textarea></div>
+      </div>
+      <button class="save-btn" onclick="saveJournal()">Save Today's Entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ HISTORY ═══ -->
+<div class="page" id="page-history">
+  <div class="page-hero">
+    <img src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=860&q=80&auto=format&fit=crop" alt="mountains" loading="lazy" onerror="this.style.display='none'">
+    <div class="page-hero-overlay"></div>
+    <div class="page-hero-text"><div class="page-eyebrow">Your journey</div><div class="page-title">HIST<span>ORY</span></div></div>
+  </div>
+  <div class="week-boxes" id="week-boxes"></div>
+  <div class="cal-nav">
+    <button class="cal-nav-btn" onclick="calPrev()">←</button>
+    <div class="cal-month" id="cal-month"></div>
+    <button class="cal-nav-btn" onclick="calNext()">→</button>
+  </div>
+  <div class="cal-wrap">
+    <div class="cal-dow"><div class="cal-dow-cell">Mo</div><div class="cal-dow-cell">Tu</div><div class="cal-dow-cell">We</div><div class="cal-dow-cell">Th</div><div class="cal-dow-cell">Fr</div><div class="cal-dow-cell">Sa</div><div class="cal-dow-cell">Su</div></div>
+    <div class="cal-grid" id="cal-grid"></div>
+  </div>
+  <div class="section" style="margin-bottom:20px">
+    <div class="sec-label"><span class="sec-tag tg-lime">📖 Journal entries</span></div>
+    <div id="j-entries"></div>
+  </div>
+</div>
+
+<!-- ═══ STATS ═══ -->
+<div class="page" id="page-stats">
+  <div class="page-hero">
+    <img src="https://images.unsplash.com/photo-1519681393784-d120267933ba?w=860&q=80&auto=format&fit=crop" alt="stars" loading="lazy" onerror="this.style.display='none'">
+    <div class="page-hero-overlay"></div>
+    <div class="page-hero-text"><div class="page-eyebrow">Performance</div><div class="page-title">ST<span>ATS</span></div></div>
+  </div>
+  <div style="padding-top:16px">
+    <div class="stat-grid" id="stat-grid"></div>
+    <div class="section"><div class="sec-label"><span class="sec-tag tg-gold">📊 Last 7 days</span></div></div>
+    <div class="heatmap"><div class="hm-bars" id="hm-bars"></div><div style="display:flex;gap:5px" id="hm-days"></div></div>
+    <div class="section"><div class="sec-label"><span class="sec-tag tg-lime">✅ Habit completion rate</span></div></div>
+    <div class="habit-bars" id="habit-bars"></div>
+    <div class="section"><div class="sec-label"><span class="sec-tag tg-teal">📈 Today's investing focus</span></div></div>
+    <div class="invest-card"><div class="invest-label">Daily reminder</div><div class="invest-text" id="invest-tip"></div></div>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<nav class="nav">
+  <button class="nav-btn active" onclick="showPage('today',this)"><span class="nav-icon">🏠</span><span class="nav-label">Today</span></button>
+  <button class="nav-btn" onclick="showPage('history',this)"><span class="nav-icon">📅</span><span class="nav-label">History</span></button>
+  <button class="nav-btn" onclick="showPage('stats',this)"><span class="nav-icon">📊</span><span class="nav-label">Stats</span></button>
+</nav>
+
+<script>
+// ─── HABIT DEFINITIONS ───
+const WEEKDAY = {
+  morning: [
+    { id:'wake',      icon:'💧', name:'Wake up + water',       sub:'Hydrate immediately',              time:'04:45' },
+    { id:'train',     icon:'🏃', name:'Training',              sub:'Run 3.2km @ 5:30/km or strength',  time:'04:55' },
+    { id:'shower',    icon:'🚿', name:'Cold shower',           sub:'5 min max',                        time:'05:20' },
+    { id:'read',      icon:'📖', name:'Reading',               sub:'25–30 min',                        time:'05:25' },
+    { id:'breakfast', icon:'🍳', name:'Breakfast',             sub:'Eat well, no rush',                time:'06:00' },
+    { id:'leave',     icon:'🎒', name:'Leave for school',      sub:'On time',                          time:'06:30' },
+  ],
+  day: [
+    { id:'school',    icon:'📚', name:'School',                sub:'Until 16:10',                      time:'08:00' },
+    { id:'sport',     icon:'⚽', name:'Football / Gym',         sub:'Home by 18:30–19:00',              time:'16:10' },
+  ],
+  evening: [
+    { id:'winddown',  icon:'🌙', name:'Wind down',             sub:'Dim lights, calm mode',            time:'21:00' },
+    { id:'nophone',   icon:'📵', name:'No phone',              sub:'Screen off before sleep',          time:'21:00' },
+    { id:'creatine',  icon:'💊', name:'Creatine',              sub:'Take with water',                  time:'21:00' },
+    { id:'meditate',  icon:'🧘', name:'Meditation',            sub:'10 min — breath focus',            time:'21:10' },
+    { id:'hygiene',   icon:'✨', name:'Skincare & hygiene',    sub:'',                                 time:'21:15' },
+    { id:'sleep',     icon:'😴', name:'Asleep by 21:45',       sub:'7h15 to 04:45',                    time:'21:30' },
+  ],
+  daily: [
+    { id:'noporn',    icon:'🚫', name:'No porn' },
+    { id:'woman',     icon:'💬', name:'Talked to a woman' },
+    { id:'invest',    icon:'📊', name:'Investing / news' },
+    { id:'journal',   icon:'✍️',  name:'Journal done' },
+  ]
+};
+
+const SATURDAY = {
+  morning: [
+    { id:'wake',      icon:'💧', name:'Wake up + water',       sub:'Hydrate immediately',              time:'06:00' },
+    { id:'train',     icon:'🏃', name:'Training',              sub:'Run 3.2km @ 5:30/km or strength',  time:'06:10' },
+    { id:'shower',    icon:'🚿', name:'Cold shower',           sub:'5 min max',                        time:'06:35' },
+    { id:'read',      icon:'📖', name:'Reading',               sub:'25–30 min',                        time:'06:40' },
+    { id:'breakfast', icon:'🍳', name:'Breakfast',             sub:'Eat well, no rush',                time:'07:15' },
+  ],
+  day: [
+    { id:'match',     icon:'⚽', name:'Football match',        sub:'10:15 – ~12:00',                   time:'10:15' },
+    { id:'sport',     icon:'🏃', name:'Rest / recovery',       sub:'After the match',                  time:'12:00' },
+  ],
+  evening: [
+    { id:'winddown',  icon:'🌙', name:'Wind down',             sub:'Dim lights, calm mode',            time:'21:00' },
+    { id:'nophone',   icon:'📵', name:'No phone',              sub:'Screen off before sleep',          time:'21:00' },
+    { id:'creatine',  icon:'💊', name:'Creatine',              sub:'Take with water',                  time:'21:00' },
+    { id:'meditate',  icon:'🧘', name:'Meditation',            sub:'10 min — breath focus',            time:'21:10' },
+    { id:'hygiene',   icon:'✨', name:'Skincare & hygiene',    sub:'',                                 time:'21:15' },
+    { id:'sleep',     icon:'😴', name:'Asleep by 21:45',       sub:'7h15 to 06:00',                    time:'21:30' },
+  ],
+  daily: [
+    { id:'noporn',    icon:'🚫', name:'No porn' },
+    { id:'woman',     icon:'💬', name:'Talked to a woman' },
+    { id:'invest',    icon:'📊', name:'Investing / news' },
+    { id:'journal',   icon:'✍️',  name:'Journal done' },
+  ]
+};
+
+const SUNDAY = {
+  morning: [
+    { id:'wake',      icon:'💧', name:'Wake up + water',       sub:'Hydrate immediately',              time:'06:00' },
+    { id:'train',     icon:'🏃', name:'Training',              sub:'Run 3.2km @ 5:30/km or strength',  time:'06:10' },
+    { id:'shower',    icon:'🚿', name:'Cold shower',           sub:'5 min max',                        time:'06:35' },
+    { id:'read',      icon:'📖', name:'Reading',               sub:'25–30 min',                        time:'06:40' },
+    { id:'breakfast', icon:'🍳', name:'Breakfast',             sub:'Eat well, no rush',                time:'07:15' },
+  ],
+  day: [
+    { id:'sport',     icon:'🏃', name:'Rest / free time',      sub:'Relax and recharge',               time:'10:00' },
+    { id:'school',    icon:'📚', name:'School prep (optional)',sub:'Review week / prepare',             time:'16:00' },
+  ],
+  evening: [
+    { id:'winddown',  icon:'🌙', name:'Wind down',             sub:'Dim lights, calm mode',            time:'21:00' },
+    { id:'nophone',   icon:'📵', name:'No phone',              sub:'Screen off before sleep',          time:'21:00' },
+    { id:'creatine',  icon:'💊', name:'Creatine',              sub:'Take with water',                  time:'21:00' },
+    { id:'meditate',  icon:'🧘', name:'Meditation',            sub:'10 min — breath focus',            time:'21:10' },
+    { id:'hygiene',   icon:'✨', name:'Skincare & hygiene',    sub:'',                                 time:'21:15' },
+    { id:'sleep',     icon:'😴', name:'Asleep by 21:45',       sub:'7h15 to 06:00',                    time:'21:30' },
+  ],
+  daily: [
+    { id:'noporn',    icon:'🚫', name:'No porn' },
+    { id:'woman',     icon:'💬', name:'Talked to a woman' },
+    { id:'invest',    icon:'📊', name:'Investing / news' },
+    { id:'journal',   icon:'✍️',  name:'Journal done' },
+  ]
+};
+
+const TIPS = [
+  'Review one stock or ETF you follow. What changed this week?',
+  'Read one investing article. Write 1 key takeaway in your journal.',
+  'Check macro news — Fed decisions, inflation data, earnings season.',
+  'Review your watchlist. Any Fibonacci levels hit today?',
+  'Study a company: revenue growth, profit margins, competitive moat.',
+  'Learn one investing concept you don\'t fully understand yet.',
+  'Check sector rotation — where is smart money flowing right now?',
+];
+
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const WATER_GOAL = 2.5, WSTEP = 0.25, WDROPS = 10;
+const STREAK_THRESHOLD = 0.75;
+
+let state = {}, calYear, calMonth;
+
+// ─── MODE DETECTION ───
+function getDayMode(date) {
+  const dow = date.getDay(); // 0=Sun, 6=Sat
+  if (dow === 6) return 'saturday';
+  if (dow === 0) return 'sunday';
+  return 'weekday';
+}
+
+function getTodayMode() { return getDayMode(new Date()); }
+
+function getHabits(mode) {
+  if (mode === 'saturday') return SATURDAY;
+  if (mode === 'sunday') return SUNDAY;
+  return WEEKDAY;
+}
+
+function getAllHabits(mode) {
+  const H = getHabits(mode);
+  return [...H.morning, ...H.day, ...H.evening, ...H.daily];
+}
+
+// ─── UTILS ───
+function p2(n) { return String(n).padStart(2,'0'); }
+function todayKey() { const d = new Date(); return `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`; }
+function dateKey(d) { return `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`; }
+function dayState() { const k = todayKey(); if (!state[k]) state[k] = {habits:{},water:0,journal:{},mode:getTodayMode()}; return state[k]; }
+function loadState() { try { const r = localStorage.getItem('filip_v5'); state = r ? JSON.parse(r) : {}; } catch { state = {}; } }
+function saveState() { localStorage.setItem('filip_v5', JSON.stringify(state)); }
+
+function ckSVG(sz=12, col='#06060e') {
+  return `<svg width="${sz}" height="${sz}" viewBox="0 0 12 12" fill="none"><polyline points="2,6 5,9 10,3" stroke="${col}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+
+// ─── STREAK ───
+function calcStreak() {
+  let streak = 0;
+  const check = new Date();
+  while (true) {
+    const k = dateKey(check);
+    if (!state[k]) break;
+    const mode = state[k].mode || getDayMode(check);
+    const total = getAllHabits(mode).length;
+    const cnt = Object.values(state[k].habits||{}).filter(Boolean).length;
+    if (cnt / total < STREAK_THRESHOLD) break;
+    streak++;
+    check.setDate(check.getDate() - 1);
+  }
+  return streak;
+}
+
+// ─── RENDER TODAY ───
+function renderRow(h, done) {
+  return `<div class="hrow ${done?'done':''}" onclick="toggle('${h.id}')">
+    <div class="hicon">${h.icon}</div>
+    <div class="hbody"><div class="hname">${h.name}</div>${h.sub?`<div class="hsub">${h.sub}</div>`:''}</div>
+    ${h.time?`<div class="htime">${h.time}</div>`:''}
+    <div class="hck">${ckSVG()}</div>
+  </div>`;
+}
+
+function renderChip(h, done) {
+  return `<div class="chip ${done?'done':''}" onclick="toggle('${h.id}')">
+    <div class="chip-icon">${h.icon}</div>
+    <div class="chip-name">${h.name}</div>
+    <div class="chip-box">${ckSVG(10,'#06060e')}</div>
+  </div>`;
+}
+
+function renderToday() {
+  const d = dayState();
+  const mode = getTodayMode();
+  d.mode = mode;
+  const H = getHabits(mode);
+  const ALL = getAllHabits(mode);
+  const TOTAL = ALL.length;
+
+  // Update mode badge
+  const badge = document.getElementById('mode-badge');
+  const heroImg = document.getElementById('hero-img');
+  if (mode === 'saturday') {
+    badge.className = 'mode-badge mode-saturday';
+    badge.textContent = '⚽ Saturday mode';
+    heroImg.src = 'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=860&q=80&auto=format&fit=crop';
+    document.getElementById('morning-time').textContent = '06:00 – 07:45';
+  } else if (mode === 'sunday') {
+    badge.className = 'mode-badge mode-sunday';
+    badge.textContent = '☁️ Sunday mode';
+    heroImg.src = 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=860&q=80&auto=format&fit=crop';
+    document.getElementById('morning-time').textContent = '06:00 – 07:45';
+  } else {
+    badge.className = 'mode-badge mode-weekday';
+    badge.textContent = '💼 Weekday mode';
+    heroImg.src = 'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=860&q=80&auto=format&fit=crop';
+    document.getElementById('morning-time').textContent = '04:45 – 06:30';
+  }
+
+  document.getElementById('list-morning').innerHTML = H.morning.map(h => renderRow(h, d.habits[h.id])).join('');
+  document.getElementById('list-day').innerHTML     = H.day.map(h => renderRow(h, d.habits[h.id])).join('');
+  document.getElementById('list-evening').innerHTML = H.evening.map(h => renderRow(h, d.habits[h.id])).join('');
+  document.getElementById('list-daily').innerHTML   = H.daily.map(h => renderChip(h, d.habits[h.id])).join('');
+
+  const done = Object.values(d.habits).filter(Boolean).length;
+  const pct  = Math.round(done / TOTAL * 100);
+  document.getElementById('prog-done').textContent = done;
+  document.getElementById('prog-left').textContent = TOTAL - done;
+  document.getElementById('prog-pct').textContent  = pct + '%';
+  document.getElementById('prog-box').style.setProperty('--p', done / TOTAL);
+
+  renderStreak();
+  renderWater();
+  loadJournal();
+}
+
+function toggle(id) {
+  const d = dayState();
+  d.habits[id] = !d.habits[id];
+  saveState(); renderToday();
+  if (d.habits[id]) showToast('✓ Done');
+}
+
+// ─── WATER ───
+function renderWater() {
+  const d = dayState();
+  const L = Math.round((d.water || 0) * 100) / 100;
+  const pct = Math.min(L / WATER_GOAL, 1);
+  document.getElementById('water-val').textContent  = L.toFixed(1) + 'L';
+  document.getElementById('water-fill').style.width = (pct * 100) + '%';
+  const el = document.getElementById('water-drops');
+  el.innerHTML = '';
+  for (let i = 0; i < WDROPS; i++) {
+    const filled = (L / WATER_GOAL) * WDROPS > i;
+    const dr = document.createElement('div');
+    dr.className = 'wdrop' + (filled ? ' on' : '');
+    dr.textContent = '💧';
+    dr.onclick = () => {
+      const d2 = dayState();
+      const nv = (i + 1) * WSTEP;
+      d2.water = Math.abs((d2.water||0) - nv) < 0.01 ? nv - WSTEP : nv;
+      if (d2.water < 0) d2.water = 0;
+      saveState(); renderWater();
+    };
+    el.appendChild(dr);
+  }
+}
+
+// ─── STREAK DISPLAY ───
+function renderStreak() {
+  const s = calcStreak();
+  document.getElementById('streak-num').textContent = s;
+  const today = todayKey();
+  const el = document.getElementById('streak-dots');
+  el.innerHTML = '';
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const k = dateKey(d);
+    const isToday = k === today;
+    const mode = state[k]?.mode || getDayMode(d);
+    const total = getAllHabits(mode).length;
+    const cnt = state[k] ? Object.values(state[k].habits||{}).filter(Boolean).length : 0;
+    const counts = cnt / total >= STREAK_THRESHOLD;
+    const dot = document.createElement('div');
+    dot.className = 'sdot' + (isToday ? ' today' : (counts ? ' on' : ''));
+    el.appendChild(dot);
+  }
+}
+
+// ─── JOURNAL ───
+function loadJournal() {
+  const j = dayState().journal || {};
+  document.getElementById('j-happened').value = j.happened || '';
+  document.getElementById('j-better').value   = j.better   || '';
+  document.getElementById('j-short').value    = j.short    || '';
+  document.getElementById('j-long').value     = j.long     || '';
+}
+
+function saveJournal() {
+  const d = dayState();
+  d.journal = {
+    happened: document.getElementById('j-happened').value,
+    better:   document.getElementById('j-better').value,
+    short:    document.getElementById('j-short').value,
+    long:     document.getElementById('j-long').value,
+  };
+  d.habits['journal'] = !!(d.journal.happened || d.journal.better || d.journal.short || d.journal.long);
+  saveState(); renderToday();
+  showToast('Journal saved ✓');
+}
+
+// ─── HISTORY ───
+function renderHistory() {
+  renderWeekBoxes();
+  renderCalendar();
+  renderJournalEntries();
+}
+
+function renderWeekBoxes() {
+  const today = new Date();
+  let done = 0, poss = 0, active = 0;
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today); d.setDate(today.getDate() - i);
+    const k = dateKey(d);
+    if (state[k]) {
+      const mode = state[k].mode || getDayMode(d);
+      const total = getAllHabits(mode).length;
+      const c = Object.values(state[k].habits||{}).filter(Boolean).length;
+      done += c; poss += total;
+      if (c / total >= STREAK_THRESHOLD) active++;
+    }
+  }
+  const avg = poss > 0 ? Math.round(done / poss * 100) : 0;
+  document.getElementById('week-boxes').innerHTML = `
+    <div class="wbox"><div class="wbox-val">${calcStreak()}</div><div class="wbox-lbl">Streak</div></div>
+    <div class="wbox"><div class="wbox-val">${active}</div><div class="wbox-lbl">75%+ days</div></div>
+    <div class="wbox"><div class="wbox-val">${avg}%</div><div class="wbox-lbl">Week avg</div></div>
+  `;
+}
+
+function renderCalendar() {
+  document.getElementById('cal-month').textContent = `${MONTHS[calMonth]} ${calYear}`;
+  let sd = new Date(calYear, calMonth, 1).getDay();
+  sd = sd === 0 ? 6 : sd - 1;
+  const dim = new Date(calYear, calMonth + 1, 0).getDate();
+  const today = todayKey();
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+  for (let i = 0; i < sd; i++) { const e = document.createElement('div'); e.className = 'ccell empty'; grid.appendChild(e); }
+  for (let d = 1; d <= dim; d++) {
+    const k = `${calYear}-${p2(calMonth+1)}-${p2(d)}`;
+    const el = document.createElement('div');
+    const cnt = state[k] ? Object.values(state[k].habits||{}).filter(Boolean).length : 0;
+    const isToday = k === today;
+    const isFuture = new Date(calYear, calMonth, d) > new Date();
+    let cls = 'ccell';
+    if (isFuture) cls += ' future';
+    else if (isToday) cls += ' today';
+    else if (cnt >= getAllHabits(state[k]?.mode || 'weekday').length) cls += ' full';
+    else if (cnt > 0) cls += ' part';
+    el.className = cls;
+    el.innerHTML = `<span>${d}</span>${cnt > 0 && !isFuture ? '<div class="ccell-dot"></div>' : ''}`;
+    if (!isFuture && cnt > 0) el.onclick = () => jumpToEntry(k);
+    grid.appendChild(el);
+  }
+}
+
+function calPrev() { calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; } renderCalendar(); }
+function calNext() { calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } renderCalendar(); }
+
+function renderJournalEntries() {
+  const el = document.getElementById('j-entries');
+  const keys = Object.keys(state).sort().reverse();
+  if (!keys.length) { el.innerHTML = '<div style="color:var(--t3);font-size:13px;padding:8px 0">No entries yet — start today.</div>'; return; }
+  el.innerHTML = keys.map(k => {
+    const s = state[k]; const j = s?.journal || {};
+    const mode = s?.mode || 'weekday';
+    const total = getAllHabits(mode).length;
+    const cnt = Object.values(s?.habits||{}).filter(Boolean).length;
+    const hasJ = j.happened || j.better || j.short || j.long;
+    if (cnt === 0 && !hasJ) return '';
+    const pct = Math.round(cnt / total * 100);
+    let bc = 'badge-miss', bt = 'Missed';
+    if (pct >= 100) { bc = 'badge-full'; bt = 'Full day'; }
+    else if (pct >= 75) { bc = 'badge-full'; bt = pct + '% ✓'; }
+    else if (pct > 0) { bc = 'badge-part'; bt = pct + '%'; }
+    const d = new Date(k + 'T12:00:00');
+    const modeLabel = mode === 'saturday' ? ' · ⚽' : mode === 'sunday' ? ' · ☁️' : '';
+    const ds = `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]}${modeLabel}`;
+    return `<div class="j-entry" id="entry-${k}">
+      <div class="j-entry-head" onclick="toggleEntry('${k}')" id="ehead-${k}">
+        <div class="j-entry-date">${ds}</div>
+        <div class="j-entry-badge ${bc}">${bt}</div>
+        <div class="j-entry-chevron">▼</div>
+      </div>
+      <div class="j-entry-body" id="ebody-${k}">
+        ${j.happened ? `<div class="j-field-label">What happened</div><div class="j-field-text">${j.happened}</div>` : ''}
+        ${j.better   ? `<div class="j-field-label">What could be better</div><div class="j-field-text">${j.better}</div>` : ''}
+        ${j.short    ? `<div class="j-field-label">Short-term goals</div><div class="j-field-text">${j.short}</div>` : ''}
+        ${j.long     ? `<div class="j-field-label">Long-term goals</div><div class="j-field-text">${j.long}</div>` : ''}
+        ${!hasJ ? '<div class="j-field-text" style="color:var(--t3);font-size:11px">No journal written this day.</div>' : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleEntry(k) {
+  const h = document.getElementById('ehead-' + k);
+  const b = document.getElementById('ebody-' + k);
+  if (h) h.classList.toggle('open');
+  if (b) b.classList.toggle('open');
+}
+
+function jumpToEntry(k) {
+  showPage('history', document.querySelector('.nav-btn:nth-child(2)'));
+  setTimeout(() => {
+    renderJournalEntries();
+    const el = document.getElementById('entry-' + k);
+    if (el) { el.scrollIntoView({behavior:'smooth', block:'center'}); toggleEntry(k); }
+  }, 150);
+}
+
+// ─── STATS ───
+function renderStats() {
+  const keys = Object.keys(state);
+  const streak = calcStreak();
+  let best = 0, cur = 0;
+  [...keys].sort().forEach(k => {
+    const mode = state[k]?.mode || 'weekday';
+    const total = getAllHabits(mode).length;
+    const c = Object.values(state[k]?.habits||{}).filter(Boolean).length;
+    if (c / total >= STREAK_THRESHOLD) { cur++; best = Math.max(best, cur); } else cur = 0;
+  });
+  const totalH = keys.reduce((a,k) => a + Object.values(state[k]?.habits||{}).filter(Boolean).length, 0);
+  const totalPoss = keys.reduce((a,k) => a + getAllHabits(state[k]?.mode||'weekday').length, 0);
+  const avg = totalPoss > 0 ? Math.round(totalH / totalPoss * 100) : 0;
+  const activeDays = keys.filter(k => {
+    const mode = state[k]?.mode || 'weekday';
+    const total = getAllHabits(mode).length;
+    return Object.values(state[k]?.habits||{}).filter(Boolean).length / total >= STREAK_THRESHOLD;
+  }).length;
+
+  document.getElementById('stat-grid').innerHTML = `
+    <div class="stat-card"><div class="stat-val">${streak}</div><div class="stat-lbl">Current streak</div></div>
+    <div class="stat-card"><div class="stat-val">${best}</div><div class="stat-lbl">Best streak</div></div>
+    <div class="stat-card"><div class="stat-val">${activeDays}</div><div class="stat-lbl">75%+ days</div></div>
+    <div class="stat-card"><div class="stat-val">${avg}%</div><div class="stat-lbl">Avg completion</div></div>
+  `;
+
+  // 7-day bars
+  const barsEl = document.getElementById('hm-bars');
+  const daysEl = document.getElementById('hm-days');
+  barsEl.innerHTML = ''; daysEl.innerHTML = '';
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const k = dateKey(d);
+    const mode = state[k]?.mode || getDayMode(d);
+    const total = getAllHabits(mode).length;
+    const cnt = state[k] ? Object.values(state[k].habits||{}).filter(Boolean).length : 0;
+    const h = Math.max(3, Math.round((cnt / total) * 100));
+    const bw = document.createElement('div'); bw.className = 'hm-bar-wrap';
+    bw.innerHTML = `<div class="hm-bar" style="height:${h}%;margin-top:${100-h}%"></div>`;
+    barsEl.appendChild(bw);
+    const dw = document.createElement('div'); dw.style.cssText = 'flex:1;text-align:center';
+    dw.innerHTML = `<div class="hm-day">${DAYS[d.getDay()].slice(0,2)}</div>`;
+    daysEl.appendChild(dw);
+  }
+
+  // Use weekday habits for the bar chart (most comprehensive)
+  const allH = getAllHabits('weekday');
+  document.getElementById('habit-bars').innerHTML = allH.map(h => {
+    const cnt = keys.filter(k => state[k]?.habits?.[h.id]).length;
+    const pct = keys.length > 0 ? Math.round(cnt / keys.length * 100) : 0;
+    return `<div class="hbar-row">
+      <div class="hbar-name">${h.icon} ${h.name}</div>
+      <div class="hbar-track"><div class="hbar-fill" style="width:${pct}%"></div></div>
+      <div class="hbar-pct">${pct}%</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('invest-tip').textContent = TIPS[new Date().getDate() % TIPS.length];
+}
+
+// ─── NAV ───
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'history') renderHistory();
+  if (name === 'stats') renderStats();
+  window.scrollTo(0, 0);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+// ─── INIT ───
+function init() {
+  const now = new Date();
+  calYear = now.getFullYear(); calMonth = now.getMonth();
+  document.getElementById('today-date').textContent =
+    `${DAYS[now.getDay()]} ${now.getDate()} ${MONTHS[now.getMonth()]} ${now.getFullYear()}`;
+  loadState();
+  renderToday();
+}
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+}
+
+init();
+</script>
+</body>
+</html>
