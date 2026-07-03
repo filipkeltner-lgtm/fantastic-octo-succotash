@@ -134,6 +134,42 @@ body { font-family: 'Outfit', sans-serif; color: var(--text); min-height: 100vh;
 .wdrop:active { transform: scale(0.92); }
 .wdrop.on { background: rgba(58,240,192,0.14); border-color: rgba(58,240,192,0.3); }
 
+/* SCREENTIME */
+.screen-inner { padding: 14px; }
+.screen-top { display: flex; align-items: baseline; margin-bottom: 3px; }
+.screen-title { font-size: 13px; font-weight: 500; }
+.screen-val { font-size: 28px; font-weight: 800; margin-left: auto; font-variant-numeric: tabular-nums; transition: color 0.3s ease; }
+.screen-goal { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; color: var(--t3); }
+.screen-bar-bg { height: 4px; background: var(--s3); border-radius: 2px; margin: 10px 0; }
+.screen-bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease, background 0.4s ease; }
+.screen-controls { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+.screen-btn { width: 40px; height: 40px; border-radius: 10px; background: var(--s2); border: 1px solid var(--border); color: var(--text); font-size: 20px; font-weight: 600; display: flex; align-items: center; justify-content: center; cursor: pointer; user-select: none; transition: all 0.12s; }
+.screen-btn:active { transform: scale(0.92); background: var(--s3); }
+.screen-mid { flex: 1; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--t3); letter-spacing: 0.08em; }
+
+/* CATCH-UP */
+.catchup-pill { margin: 14px 16px 0; background: var(--red-d); border: 1px solid rgba(240,64,96,0.25); border-radius: 30px; padding: 10px 14px; display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; transition: all 0.12s; }
+.catchup-pill:active { transform: scale(0.98); }
+.catchup-pill-icon { font-size: 14px; }
+.catchup-pill-text { flex: 1; font-size: 12.5px; font-weight: 600; color: var(--red); }
+.catchup-pill-chevron { font-size: 9px; color: var(--red); opacity: 0.7; transition: transform 0.2s; }
+.catchup-pill.open .catchup-pill-chevron { transform: rotate(180deg); }
+.catchup-card { margin: 8px 16px 0; background: var(--red-d); border: 1px solid rgba(240,64,96,0.25); border-radius: var(--r); overflow: hidden; display: none; }
+.catchup-card.open { display: block; }
+.catchup-head { padding: 14px 16px 4px; display: flex; align-items: center; gap: 8px; }
+.catchup-title { font-size: 13px; font-weight: 700; color: var(--red); }
+.catchup-sub { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--t3); letter-spacing: 0.06em; margin-left: auto; text-transform: uppercase; }
+.catchup-body { padding: 4px 10px 8px; }
+.catchup-chip { display: flex; align-items: center; gap: 10px; padding: 10px 8px; border-radius: 10px; cursor: pointer; user-select: none; transition: background 0.12s; }
+.catchup-chip:active { background: rgba(255,255,255,0.05); }
+.catchup-chip .cicon { font-size: 16px; width: 24px; text-align: center; flex-shrink: 0; }
+.catchup-chip .cname { flex: 1; font-size: 13px; color: var(--text); }
+.catchup-chip .cck { width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid var(--border2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.catchup-chip.done .cck { background: var(--lime); border-color: var(--lime); }
+.catchup-chip.done .cname { color: var(--t3); text-decoration: line-through; }
+.catchup-journal-btn { display: block; width: calc(100% - 16px); margin: 6px 8px 10px; background: transparent; border: 1px dashed var(--border2); color: var(--t2); border-radius: var(--rxs); padding: 11px; font-family: 'Outfit', sans-serif; font-size: 12.5px; font-weight: 500; cursor: pointer; }
+.catchup-journal-btn:active { background: rgba(255,255,255,0.04); }
+
 /* JOURNAL */
 .journal-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
 .jprompt { display: flex; flex-direction: column; gap: 4px; }
@@ -237,6 +273,17 @@ body { font-family: 'Outfit', sans-serif; color: var(--text); min-height: 100vh;
     </div>
   </div>
 
+  <div class="catchup-pill" id="catchup-pill" style="display:none" onclick="toggleCatchupOpen()">
+    <div class="catchup-pill-icon">⏳</div>
+    <div class="catchup-pill-text" id="catchup-pill-text">Catch up: yesterday</div>
+    <div class="catchup-pill-chevron">▾</div>
+  </div>
+  <div class="catchup-card" id="catchup-card">
+    <div class="catchup-head"><span class="catchup-title">⏳ Catch up: yesterday</span><span class="catchup-sub" id="catchup-date"></span></div>
+    <div class="catchup-body" id="catchup-list"></div>
+    <div id="catchup-journal-wrap"></div>
+  </div>
+
   <div class="streak-card">
     <div class="streak-flame">🔥</div>
     <div class="streak-body">
@@ -264,6 +311,34 @@ body { font-family: 'Outfit', sans-serif; color: var(--text); min-height: 100vh;
       <div class="water-goal">Goal: 2.5L / day</div>
       <div class="water-bar-bg"><div class="water-bar-fill" id="water-fill" style="width:0%"></div></div>
       <div class="water-drops" id="water-drops"></div>
+    </div></div>
+  </div>
+
+  <div class="section">
+    <div class="sec-label"><span class="sec-tag tg-teal">😴 Sleep</span></div>
+    <div class="card"><div class="screen-inner">
+      <div class="screen-top"><span class="screen-title">Today's sleep</span><span class="screen-val" id="sleep-val">0h 00m</span></div>
+      <div class="screen-goal">Goal: 7–9h (8h target)</div>
+      <div class="screen-bar-bg"><div class="screen-bar-fill" id="sleep-fill" style="width:0%"></div></div>
+      <div class="screen-controls">
+        <div class="screen-btn" onclick="adjustSleep(-15)">–</div>
+        <div class="screen-mid">± 15 MIN</div>
+        <div class="screen-btn" onclick="adjustSleep(15)">+</div>
+      </div>
+    </div></div>
+  </div>
+
+  <div class="section">
+    <div class="sec-label"><span class="sec-tag tg-gold">📱 Screentime</span></div>
+    <div class="card"><div class="screen-inner">
+      <div class="screen-top"><span class="screen-title">Today's screentime</span><span class="screen-val" id="screen-val">0h 00m</span></div>
+      <div class="screen-goal">Goal: under 3.5h / day</div>
+      <div class="screen-bar-bg"><div class="screen-bar-fill" id="screen-fill" style="width:0%"></div></div>
+      <div class="screen-controls">
+        <div class="screen-btn" onclick="adjustScreentime(-15)">–</div>
+        <div class="screen-mid">± 15 MIN</div>
+        <div class="screen-btn" onclick="adjustScreentime(15)">+</div>
+      </div>
     </div></div>
   </div>
 
@@ -313,6 +388,7 @@ body { font-family: 'Outfit', sans-serif; color: var(--text); min-height: 100vh;
   </div>
   <div style="padding-top:16px">
     <div class="stat-grid" id="stat-grid"></div>
+    <div class="stat-grid" id="stat-grid-sleep" style="margin-top:-2px"></div>
     <div class="section"><div class="sec-label"><span class="sec-tag tg-gold">📊 Last 7 days</span></div></div>
     <div class="heatmap"><div class="hm-bars" id="hm-bars"></div><div style="display:flex;gap:5px" id="hm-days"></div></div>
     <div class="section"><div class="sec-label"><span class="sec-tag tg-lime">✅ Habit completion rate</span></div></div>
@@ -344,6 +420,8 @@ const WEEKDAY = {
   day: [
     { id:'school',    icon:'📚', name:'School',                sub:'Until 16:10',                      time:'08:00' },
     { id:'sport',     icon:'⚽', name:'Football / Gym',         sub:'Home by 18:30–19:00',              time:'16:10' },
+    { id:'selfedu',   icon:'🧠', name:'Self-education',        sub:'Learn something new',              time:'' },
+    { id:'maturita',  icon:'🎓', name:'Prep maturita',         sub:'Study for the exam',               time:'' },
   ],
   evening: [
     { id:'winddown',  icon:'🌙', name:'Wind down',             sub:'Dim lights, calm mode',            time:'21:00' },
@@ -357,6 +435,7 @@ const WEEKDAY = {
     { id:'noporn',    icon:'🚫', name:'No porn' },
     { id:'woman',     icon:'💬', name:'Talked to a woman' },
     { id:'invest',    icon:'📊', name:'Investing / news' },
+    { id:'noalcohol', icon:'🍺', name:'No alcohol' },
     { id:'journal',   icon:'✍️',  name:'Journal done' },
   ]
 };
@@ -372,6 +451,8 @@ const SATURDAY = {
   day: [
     { id:'match',     icon:'⚽', name:'Football match',        sub:'10:15 – ~12:00',                   time:'10:15' },
     { id:'sport',     icon:'🏃', name:'Rest / recovery',       sub:'After the match',                  time:'12:00' },
+    { id:'selfedu',   icon:'🧠', name:'Self-education',        sub:'Learn something new',              time:'' },
+    { id:'maturita',  icon:'🎓', name:'Prep maturita',         sub:'Study for the exam',               time:'' },
   ],
   evening: [
     { id:'winddown',  icon:'🌙', name:'Wind down',             sub:'Dim lights, calm mode',            time:'21:00' },
@@ -385,6 +466,7 @@ const SATURDAY = {
     { id:'noporn',    icon:'🚫', name:'No porn' },
     { id:'woman',     icon:'💬', name:'Talked to a woman' },
     { id:'invest',    icon:'📊', name:'Investing / news' },
+    { id:'noalcohol', icon:'🍺', name:'No alcohol' },
     { id:'journal',   icon:'✍️',  name:'Journal done' },
   ]
 };
@@ -400,6 +482,8 @@ const SUNDAY = {
   day: [
     { id:'sport',     icon:'🏃', name:'Rest / free time',      sub:'Relax and recharge',               time:'10:00' },
     { id:'school',    icon:'📚', name:'School prep (optional)',sub:'Review week / prepare',             time:'16:00' },
+    { id:'selfedu',   icon:'🧠', name:'Self-education',        sub:'Learn something new',              time:'' },
+    { id:'maturita',  icon:'🎓', name:'Prep maturita',         sub:'Study for the exam',               time:'' },
   ],
   evening: [
     { id:'winddown',  icon:'🌙', name:'Wind down',             sub:'Dim lights, calm mode',            time:'21:00' },
@@ -413,6 +497,7 @@ const SUNDAY = {
     { id:'noporn',    icon:'🚫', name:'No porn' },
     { id:'woman',     icon:'💬', name:'Talked to a woman' },
     { id:'invest',    icon:'📊', name:'Investing / news' },
+    { id:'noalcohol', icon:'🍺', name:'No alcohol' },
     { id:'journal',   icon:'✍️',  name:'Journal done' },
   ]
 };
@@ -431,8 +516,33 @@ const MONTHS = ['January','February','March','April','May','June','July','August
 const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const WATER_GOAL = 2.5, WSTEP = 0.25, WDROPS = 10;
 const STREAK_THRESHOLD = 0.75;
+const SCREEN_GOAL_MIN = 210;              // under 3.5h counts as done
+const SLEEP_GOAL_MIN = 480;               // 8h target, shown as the widget default
+const SLEEP_OK_MIN = 420, SLEEP_OK_MAX = 540; // counts as done between 7h–9h
 
-let state = {}, calYear, calMonth;
+// Auto-completing entries driven by the water / sleep / screentime widgets.
+// They aren't rendered as separate rows, but count towards the day's total.
+const VIRTUAL_HABITS = [
+  { id:'waterdone', icon:'💧', name:'Water goal (2.5L)' },
+  { id:'sleepdur',  icon:'😴', name:'Sleep 7–9h' },
+  { id:'screenok',  icon:'📱', name:'Screentime under 3.5h' },
+];
+
+let state = {}, calYear, calMonth, catchupOpen = false;
+
+// ─── SCHOOL BREAK ───
+// No school / no "leave for school" until this date (summer holidays)
+const SCHOOL_BREAK_UNTIL = new Date(2026, 7, 31, 23, 59, 59); // Aug 31, 2026
+function isSchoolBreak() { return new Date() <= SCHOOL_BREAK_UNTIL; }
+
+// ─── FOOTBALL SEASON ───
+// Match is only "on" 22 Aug – 15 Nov, and 15 Mar – 15 Jun (repeats every year)
+function isFootballSeason(date = new Date()) {
+  const md = (date.getMonth() + 1) * 100 + date.getDate(); // e.g. 22 Aug -> 822
+  const inAutumn = md >= 822 && md <= 1115;   // Aug 22 – Nov 15
+  const inSpring = md >= 315 && md <= 615;    // Mar 15 – Jun 15
+  return inAutumn || inSpring;
+}
 
 // ─── MODE DETECTION ───
 function getDayMode(date) {
@@ -445,22 +555,57 @@ function getDayMode(date) {
 function getTodayMode() { return getDayMode(new Date()); }
 
 function getHabits(mode) {
-  if (mode === 'saturday') return SATURDAY;
-  if (mode === 'sunday') return SUNDAY;
-  return WEEKDAY;
+  let H;
+  if (mode === 'saturday') H = SATURDAY;
+  else if (mode === 'sunday') H = SUNDAY;
+  else H = WEEKDAY;
+
+  if (isSchoolBreak()) {
+    H = {
+      ...H,
+      morning: H.morning.filter(h => h.id !== 'leave'),
+      day: H.day.filter(h => h.id !== 'school'),
+    };
+  }
+
+  if (mode === 'saturday' && !isFootballSeason()) {
+    H = {
+      ...H,
+      day: H.day
+        .filter(h => h.id !== 'match')
+        .map(h => h.id === 'sport'
+          ? { ...h, name: 'Free time / rest', sub: 'Off-season — no match', time: '10:15' }
+          : h),
+    };
+  }
+
+  return H;
 }
 
 function getAllHabits(mode) {
   const H = getHabits(mode);
-  return [...H.morning, ...H.day, ...H.evening, ...H.daily];
+  return [...H.morning, ...H.day, ...H.evening, ...H.daily, ...VIRTUAL_HABITS];
 }
 
 // ─── UTILS ───
 function p2(n) { return String(n).padStart(2,'0'); }
 function todayKey() { const d = new Date(); return `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`; }
 function dateKey(d) { return `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`; }
-function dayState() { const k = todayKey(); if (!state[k]) state[k] = {habits:{},water:0,journal:{},mode:getTodayMode()}; return state[k]; }
+function dateFromKey(k) { const [y,m,d] = k.split('-').map(Number); return new Date(y, m-1, d); }
+function yesterdayKey() { const d = new Date(); d.setDate(d.getDate() - 1); return dateKey(d); }
+function stateFor(k) { if (!state[k]) state[k] = {habits:{}, water:0, journal:{}, mode:getDayMode(dateFromKey(k)), screentime:0, sleepMinutes:0}; return state[k]; }
+function dayState() { return stateFor(todayKey()); }
 function loadState() { try { const r = localStorage.getItem('filip_v5'); state = r ? JSON.parse(r) : {}; } catch { state = {}; } }
+
+// Recompute the auto-derived habit flags from the widget values.
+// Must run BEFORE the done/total count for the day is calculated.
+function updateDerivedHabits(d) {
+  d.habits['waterdone'] = (d.water || 0) >= WATER_GOAL - 0.001;
+  const sleepMin = d.sleepMinutes || 0;
+  d.habits['sleepdur'] = sleepMin >= SLEEP_OK_MIN && sleepMin <= SLEEP_OK_MAX;
+  const screenMin = d.screentime || 0;
+  d.habits['screenok'] = screenMin < SCREEN_GOAL_MIN;
+}
 function saveState() { localStorage.setItem('filip_v5', JSON.stringify(state)); }
 
 function ckSVG(sz=12, col='#06060e') {
@@ -504,6 +649,7 @@ function renderChip(h, done) {
 
 function renderToday() {
   const d = dayState();
+  updateDerivedHabits(d);
   const mode = getTodayMode();
   d.mode = mode;
   const H = getHabits(mode);
@@ -516,7 +662,7 @@ function renderToday() {
   if (mode === 'saturday') {
     badge.className = 'mode-badge mode-saturday';
     badge.textContent = '⚽ Saturday mode';
-    heroImg.src = 'https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=860&q=80&auto=format&fit=crop';
+    heroImg.src = 'https://images.unsplash.com/photo-1735587310850-f89774730c3d?w=860&q=80&auto=format&fit=crop';
     document.getElementById('morning-time').textContent = '06:00 – 07:45';
   } else if (mode === 'sunday') {
     badge.className = 'mode-badge mode-sunday';
@@ -544,15 +690,21 @@ function renderToday() {
 
   renderStreak();
   renderWater();
+  renderSleep();
+  renderScreentime();
   loadJournal();
+  renderCatchup();
 }
 
-function toggle(id) {
-  const d = dayState();
+function toggleFor(key, id) {
+  const d = stateFor(key);
   d.habits[id] = !d.habits[id];
-  saveState(); renderToday();
+  saveState();
+  renderToday();
   if (d.habits[id]) showToast('✓ Done');
 }
+
+function toggle(id) { toggleFor(todayKey(), id); }
 
 // ─── WATER ───
 function renderWater() {
@@ -573,10 +725,57 @@ function renderWater() {
       const nv = (i + 1) * WSTEP;
       d2.water = Math.abs((d2.water||0) - nv) < 0.01 ? nv - WSTEP : nv;
       if (d2.water < 0) d2.water = 0;
-      saveState(); renderWater();
+      saveState(); renderToday();
     };
     el.appendChild(dr);
   }
+}
+
+// ─── SLEEP ───
+function renderSleep() {
+  const d = dayState();
+  const m = Math.max(0, d.sleepMinutes || 0);
+  const h = Math.floor(m / 60), mm = m % 60;
+  const valEl = document.getElementById('sleep-val');
+  valEl.textContent = `${h}h ${p2(mm)}m`;
+  const pct = Math.min(m / (SLEEP_GOAL_MIN * 1.5), 1);
+  const fill = document.getElementById('sleep-fill');
+  fill.style.width = (pct * 100) + '%';
+  const ok = m >= SLEEP_OK_MIN && m <= SLEEP_OK_MAX;
+  const close = m >= SLEEP_OK_MIN - 60 && m <= SLEEP_OK_MAX + 60;
+  const color = ok ? 'var(--lime)' : (close ? 'var(--gold)' : 'var(--red)');
+  fill.style.background = color;
+  valEl.style.color = color;
+}
+
+function adjustSleep(delta) {
+  const d = dayState();
+  d.sleepMinutes = Math.max(0, (d.sleepMinutes || 0) + delta);
+  saveState(); renderToday();
+}
+
+// ─── SCREENTIME ───
+const SCREEN_GOAL = 120; // minutes (2h) — used just for the visual bar scale
+function renderScreentime() {
+  const d = dayState();
+  const m = Math.max(0, d.screentime || 0);
+  const h = Math.floor(m / 60), mm = m % 60;
+  const valEl = document.getElementById('screen-val');
+  valEl.textContent = `${h}h ${p2(mm)}m`;
+  const pct = Math.min(m / (SCREEN_GOAL_MIN * 2), 1);
+  const fill = document.getElementById('screen-fill');
+  fill.style.width = (pct * 100) + '%';
+  let color = 'var(--lime)';
+  if (m >= SCREEN_GOAL_MIN + 90) color = 'var(--red)';
+  else if (m >= SCREEN_GOAL_MIN) color = 'var(--gold)';
+  fill.style.background = color;
+  valEl.style.color = color;
+}
+
+function adjustScreentime(delta) {
+  const d = dayState();
+  d.screentime = Math.max(0, (d.screentime || 0) + delta);
+  saveState(); renderToday();
 }
 
 // ─── STREAK DISPLAY ───
@@ -620,6 +819,83 @@ function saveJournal() {
   d.habits['journal'] = !!(d.journal.happened || d.journal.better || d.journal.short || d.journal.long);
   saveState(); renderToday();
   showToast('Journal saved ✓');
+}
+
+// ─── CATCH-UP (yesterday) ───
+function toggleCatchupOpen() { catchupOpen = !catchupOpen; renderCatchup(); }
+
+function renderCatchup() {
+  const yKey = yesterdayKey();
+  const pill = document.getElementById('catchup-pill');
+  const card = document.getElementById('catchup-card');
+  const yState = state[yKey];
+  const yMode = yState?.mode || getDayMode(dateFromKey(yKey));
+  const VIRTUAL_IDS = VIRTUAL_HABITS.map(h => h.id);
+  const yHabits = getAllHabits(yMode).filter(h => h.id !== 'journal' && !VIRTUAL_IDS.includes(h.id));
+  const missed = yHabits.filter(h => !(yState?.habits?.[h.id]));
+  const journalMissing = !(yState?.journal && (yState.journal.happened || yState.journal.better || yState.journal.short || yState.journal.long));
+  const missedCount = missed.length + (journalMissing ? 1 : 0);
+
+  if (missedCount === 0) {
+    pill.style.display = 'none';
+    card.classList.remove('open');
+    return;
+  }
+
+  pill.style.display = 'flex';
+  pill.classList.toggle('open', catchupOpen);
+  document.getElementById('catchup-pill-text').textContent =
+    `Catch up: yesterday · ${missedCount} to do`;
+  card.classList.toggle('open', catchupOpen);
+
+  if (!catchupOpen) return; // don't bother building the card contents while collapsed
+
+  const yd = dateFromKey(yKey);
+  document.getElementById('catchup-date').textContent = `${DAYS[yd.getDay()]} ${yd.getDate()} ${MONTHS[yd.getMonth()]}`;
+
+  document.getElementById('catchup-list').innerHTML = missed.map(h => {
+    const done = !!(state[yKey]?.habits?.[h.id]);
+    return `<div class="catchup-chip ${done ? 'done' : ''}" onclick="toggleFor('${yKey}','${h.id}')">
+      <div class="cicon">${h.icon}</div>
+      <div class="cname">${h.name}</div>
+      <div class="cck">${done ? ckSVG(11,'#06060e') : ''}</div>
+    </div>`;
+  }).join('');
+
+  const jwrap = document.getElementById('catchup-journal-wrap');
+  if (journalMissing) {
+    jwrap.innerHTML = `<button class="catchup-journal-btn" onclick="toggleCatchupJournal()">✍️ Write yesterday's journal</button>
+      <div id="catchup-journal-form" style="display:none">
+        <div class="journal-body">
+          <div class="jprompt"><div class="jlabel">What happened</div><textarea class="jinput" id="cj-happened" rows="2"></textarea></div>
+          <div class="jprompt"><div class="jlabel">What could have been better</div><textarea class="jinput" id="cj-better" rows="2"></textarea></div>
+          <div class="jprompt"><div class="jlabel">Short-term goals</div><textarea class="jinput" id="cj-short" rows="2"></textarea></div>
+          <div class="jprompt"><div class="jlabel">Long-term goals</div><textarea class="jinput" id="cj-long" rows="2"></textarea></div>
+        </div>
+        <button class="save-btn" onclick="saveCatchupJournal('${yKey}')">Save Yesterday's Entry</button>
+      </div>`;
+  } else {
+    jwrap.innerHTML = '';
+  }
+}
+
+function toggleCatchupJournal() {
+  const f = document.getElementById('catchup-journal-form');
+  if (f) f.style.display = f.style.display === 'none' ? 'block' : 'none';
+}
+
+function saveCatchupJournal(key) {
+  const d = stateFor(key);
+  d.journal = {
+    happened: document.getElementById('cj-happened').value,
+    better:   document.getElementById('cj-better').value,
+    short:    document.getElementById('cj-short').value,
+    long:     document.getElementById('cj-long').value,
+  };
+  d.habits['journal'] = !!(d.journal.happened || d.journal.better || d.journal.short || d.journal.long);
+  saveState();
+  renderToday();
+  showToast("Yesterday's journal saved ✓");
 }
 
 // ─── HISTORY ───
@@ -758,6 +1034,22 @@ function renderStats() {
     <div class="stat-card"><div class="stat-val">${best}</div><div class="stat-lbl">Best streak</div></div>
     <div class="stat-card"><div class="stat-val">${activeDays}</div><div class="stat-lbl">75%+ days</div></div>
     <div class="stat-card"><div class="stat-val">${avg}%</div><div class="stat-lbl">Avg completion</div></div>
+  `;
+
+  // Median sleep — median is more robust than average against the odd
+  // all-nighter or a forgotten log, so it better reflects a "typical" night.
+  const sleepVals = keys.map(k => state[k]?.sleepMinutes).filter(v => v && v > 0).sort((a,b) => a - b);
+  let medianMin = 0;
+  if (sleepVals.length) {
+    const mid = Math.floor(sleepVals.length / 2);
+    medianMin = sleepVals.length % 2 ? sleepVals[mid] : Math.round((sleepVals[mid-1] + sleepVals[mid]) / 2);
+  }
+  const medianText = sleepVals.length ? `${Math.floor(medianMin/60)}h ${p2(medianMin%60)}m` : '–';
+  document.getElementById('stat-grid-sleep').innerHTML = `
+    <div class="stat-card" style="grid-column:1 / -1; display:flex; align-items:center; justify-content:space-between;">
+      <div><div class="stat-val" style="color:var(--teal); font-size:30px;">${medianText}</div><div class="stat-lbl">Median sleep / night</div></div>
+      <div style="font-size:28px">😴</div>
+    </div>
   `;
 
   // 7-day bars
