@@ -522,10 +522,16 @@ const SLEEP_OK_MIN = 420, SLEEP_OK_MAX = 540; // counts as done between 7h–9h
 
 // Auto-completing entries driven by the water / sleep / screentime widgets.
 // They aren't rendered as separate rows, but count towards the day's total.
+// Newly added items (self-education, prep maturita, no alcohol, water/sleep/screen
+// goals) only count from this date onward — older days never had a chance to log
+// them, so they're excluded from the total for anything before this.
+const NEW_HABITS_CUTOFF = '2026-07-03';
+const NEW_EXCLUDE_IDS = new Set(['selfedu', 'maturita', 'noalcohol', 'waterdone', 'sleepdur', 'screenok']);
+
 const VIRTUAL_HABITS = [
   { id:'waterdone', icon:'💧', name:'Water goal (2.5L)' },
   { id:'sleepdur',  icon:'😴', name:'Sleep 7–9h' },
-  { id:'screenok',  icon:'📱', name:'Screentime under 3.5h' },
+  { id:'screenok',  icon:'📱', name:'Screen under 3.5h' },
 ];
 
 let state = {}, calYear, calMonth, catchupOpen = false;
@@ -582,9 +588,13 @@ function getHabits(mode) {
   return H;
 }
 
-function getAllHabits(mode) {
+function getAllHabits(mode, key) {
   const H = getHabits(mode);
-  return [...H.morning, ...H.day, ...H.evening, ...H.daily, ...VIRTUAL_HABITS];
+  let list = [...H.morning, ...H.day, ...H.evening, ...H.daily, ...VIRTUAL_HABITS];
+  if (key && key < NEW_HABITS_CUTOFF) {
+    list = list.filter(h => !NEW_EXCLUDE_IDS.has(h.id));
+  }
+  return list;
 }
 
 // ─── UTILS ───
@@ -620,7 +630,7 @@ function calcStreak() {
     const k = dateKey(check);
     if (!state[k]) break;
     const mode = state[k].mode || getDayMode(check);
-    const total = getAllHabits(mode).length;
+    const total = getAllHabits(mode, k).length;
     const cnt = Object.values(state[k].habits||{}).filter(Boolean).length;
     if (cnt / total < STREAK_THRESHOLD) break;
     streak++;
@@ -653,7 +663,7 @@ function renderToday() {
   const mode = getTodayMode();
   d.mode = mode;
   const H = getHabits(mode);
-  const ALL = getAllHabits(mode);
+  const ALL = getAllHabits(mode, todayKey());
   const TOTAL = ALL.length;
 
   // Update mode badge
@@ -790,7 +800,7 @@ function renderStreak() {
     const k = dateKey(d);
     const isToday = k === today;
     const mode = state[k]?.mode || getDayMode(d);
-    const total = getAllHabits(mode).length;
+    const total = getAllHabits(mode, k).length;
     const cnt = state[k] ? Object.values(state[k].habits||{}).filter(Boolean).length : 0;
     const counts = cnt / total >= STREAK_THRESHOLD;
     const dot = document.createElement('div');
@@ -831,7 +841,7 @@ function renderCatchup() {
   const yState = state[yKey];
   const yMode = yState?.mode || getDayMode(dateFromKey(yKey));
   const VIRTUAL_IDS = VIRTUAL_HABITS.map(h => h.id);
-  const yHabits = getAllHabits(yMode).filter(h => h.id !== 'journal' && !VIRTUAL_IDS.includes(h.id));
+  const yHabits = getAllHabits(yMode, yKey).filter(h => h.id !== 'journal' && !VIRTUAL_IDS.includes(h.id));
   const missed = yHabits.filter(h => !(yState?.habits?.[h.id]));
   const journalMissing = !(yState?.journal && (yState.journal.happened || yState.journal.better || yState.journal.short || yState.journal.long));
   const missedCount = missed.length + (journalMissing ? 1 : 0);
@@ -913,7 +923,7 @@ function renderWeekBoxes() {
     const k = dateKey(d);
     if (state[k]) {
       const mode = state[k].mode || getDayMode(d);
-      const total = getAllHabits(mode).length;
+      const total = getAllHabits(mode, k).length;
       const c = Object.values(state[k].habits||{}).filter(Boolean).length;
       done += c; poss += total;
       if (c / total >= STREAK_THRESHOLD) active++;
@@ -945,7 +955,7 @@ function renderCalendar() {
     let cls = 'ccell';
     if (isFuture) cls += ' future';
     else if (isToday) cls += ' today';
-    else if (cnt >= getAllHabits(state[k]?.mode || 'weekday').length) cls += ' full';
+    else if (cnt >= getAllHabits(state[k]?.mode || 'weekday', k).length) cls += ' full';
     else if (cnt > 0) cls += ' part';
     el.className = cls;
     el.innerHTML = `<span>${d}</span>${cnt > 0 && !isFuture ? '<div class="ccell-dot"></div>' : ''}`;
@@ -964,7 +974,7 @@ function renderJournalEntries() {
   el.innerHTML = keys.map(k => {
     const s = state[k]; const j = s?.journal || {};
     const mode = s?.mode || 'weekday';
-    const total = getAllHabits(mode).length;
+    const total = getAllHabits(mode, k).length;
     const cnt = Object.values(s?.habits||{}).filter(Boolean).length;
     const hasJ = j.happened || j.better || j.short || j.long;
     if (cnt === 0 && !hasJ) return '';
@@ -1016,16 +1026,16 @@ function renderStats() {
   let best = 0, cur = 0;
   [...keys].sort().forEach(k => {
     const mode = state[k]?.mode || 'weekday';
-    const total = getAllHabits(mode).length;
+    const total = getAllHabits(mode, k).length;
     const c = Object.values(state[k]?.habits||{}).filter(Boolean).length;
     if (c / total >= STREAK_THRESHOLD) { cur++; best = Math.max(best, cur); } else cur = 0;
   });
   const totalH = keys.reduce((a,k) => a + Object.values(state[k]?.habits||{}).filter(Boolean).length, 0);
-  const totalPoss = keys.reduce((a,k) => a + getAllHabits(state[k]?.mode||'weekday').length, 0);
+  const totalPoss = keys.reduce((a,k) => a + getAllHabits(state[k]?.mode||'weekday', k).length, 0);
   const avg = totalPoss > 0 ? Math.round(totalH / totalPoss * 100) : 0;
   const activeDays = keys.filter(k => {
     const mode = state[k]?.mode || 'weekday';
-    const total = getAllHabits(mode).length;
+    const total = getAllHabits(mode, k).length;
     return Object.values(state[k]?.habits||{}).filter(Boolean).length / total >= STREAK_THRESHOLD;
   }).length;
 
@@ -1060,7 +1070,7 @@ function renderStats() {
     const d = new Date(); d.setDate(d.getDate() - i);
     const k = dateKey(d);
     const mode = state[k]?.mode || getDayMode(d);
-    const total = getAllHabits(mode).length;
+    const total = getAllHabits(mode, k).length;
     const cnt = state[k] ? Object.values(state[k].habits||{}).filter(Boolean).length : 0;
     const h = Math.max(3, Math.round((cnt / total) * 100));
     const bw = document.createElement('div'); bw.className = 'hm-bar-wrap';
