@@ -1082,10 +1082,15 @@ function renderStats() {
   }
 
   // Use weekday habits for the bar chart (most comprehensive)
-  const allH = getAllHabits('weekday');
+  const allH = getAllHabits('weekday', todayKey());
+  const eligibleDays = keys.filter(k => k >= NEW_HABITS_CUTOFF);
   document.getElementById('habit-bars').innerHTML = allH.map(h => {
-    const cnt = keys.filter(k => state[k]?.habits?.[h.id]).length;
-    const pct = keys.length > 0 ? Math.round(cnt / keys.length * 100) : 0;
+    // New items only existed from NEW_HABITS_CUTOFF onward, so only count
+    // days from then on — otherwise all the older days with no chance to
+    // log them would drag the percentage down artificially.
+    const relevantKeys = NEW_EXCLUDE_IDS.has(h.id) ? eligibleDays : keys;
+    const cnt = relevantKeys.filter(k => state[k]?.habits?.[h.id]).length;
+    const pct = relevantKeys.length > 0 ? Math.round(cnt / relevantKeys.length * 100) : 0;
     return `<div class="hbar-row">
       <div class="hbar-name">${h.icon} ${h.name}</div>
       <div class="hbar-track"><div class="hbar-fill" style="width:${pct}%"></div></div>
